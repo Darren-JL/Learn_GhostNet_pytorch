@@ -2398,6 +2398,61 @@ epoch64：acc@1:    67.178%,    acc@5:    87.142%
 
 ......
 
+epoch66：acc@1:    67.132%,    acc@5:    87.098%
+
+epoch67：acc@1:    67.244%,    acc@5:    87.144%
+
+......
+
+epoch71：acc@1:    67.196%,    acc@5:    87.156%
+
+......
+
+停止训练！
+
+保存此时的模型参数，将训练方式改为微调，学习率从0.05（适当提高学习率）开始线性递减到0，再训练30个epochs。加载方式如下：
+
+（1）只保存模型参数以及加载：
+
+```python
+torch.save(model.state_dict(), PATH)  # 模型保存，一般保存为model.pth
+
+model.load_state_dict(torch.load(PATH))  # 模型加载
+```
+
+（2）保存模型的参数和各个超参数为字典：
+
+```python
+torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            ...
+            }, PATH)  # 保存模型为一个字典，一般保存为model.pth.tar
+
+checkpoint = torch.load(PATH)
+model.load_state_dict(checkpoint['model_state_dict'])  # 模型加载
+```
+
+
+
+训练结果如下：
+
+epoch0：acc@1:    65.258%,    acc@5:    86.848%
+
+......
+
+epoch4：acc@1:    68.668%,    acc@5:    88.730%
+
+epoch5：acc@1:    69.520%,    acc@5:    89.180%
+
+epoch6：acc@1:    69.560%,    acc@5:    89.288%
+
+epoch7：acc@1:    69.112%,    acc@5:    88.790%
+
+epoch8：acc@1:    68.602%,    acc@5:    88.680%
+
 
 
 
@@ -2406,10 +2461,7 @@ epoch64：acc@1:    67.178%,    acc@5:    87.142%
 
 3.第三次学习率衰减方式调整
 
-使用第二次调整的学习率（即每过5个epoch，学习率减半）继续训练到65个epoch，测试集上的精度上升幅度很小，最好的top-1精度为67.232%，相应的top-5精度为87.068%，离目标分别相差6.8%和4.1%，基本上没有上升空间了；在github上看到别人复现的结果https://github.com/d-li14/ghostnet.pytorch） ，学习率衰减方式为linear，共训练到240个epoch，最终top-1和top-5准确率分别为：72.318% / 90.670%；
-从别人的训练方式来看，第二次调整的学习率衰减方式衰减过快，需要一种更缓和的衰减方式，训练更多的epoch。决定第三次调整学习率衰减方式为linear，共训练240个epoch。
-
-调整学习率为线性衰减方式：
+第二次调整的学习率衰减方式中top-1精度最高为67.2%，并且到了40个epoch之后基本上就没有提升的空间了。在github上找到别人的复现版本（https://github.com/d-li14/ghostnet.pytorch） ，调整学习率为线性衰减方式：
 
 ```python
 lr = init_lr * (1 - (current_iter - warmup_iter) / (max_iter - warmup_iter))
@@ -2426,4 +2478,28 @@ lr = init_lr * (1 - current_iter / max_iter)
 epoch0：acc@1:    14.130%,    acc@5:    32.216%
 
 epoch1：acc@1:    30.340%,    acc@5:    56.084%
+
+epoch2：acc@1:    36.188%,    acc@5:    62.150%
+
+epoch3：acc@1:    41.452%,    acc@5:    67.206%
+
+......
+
+epoch8：acc@1:    49.282%,    acc@5:    74.348%
+
+epoch9：acc@1:    48.572%,    acc@5:    74.038%
+
+epoch10：acc@1:    49.662%,    acc@5:    74.918%
+
+epoch11：acc@1:    50.028%,    acc@5:    75.260%
+
+epoch12：acc@1:    50.836%,    acc@5:    75.510%
+
+......
+
+epoch18：acc@1:    52.262%,    acc@5:    79.904%
+
+epoch19：acc@1:    52.780%,    acc@5:    77.764%
+
+epoch20：acc@1:    53.560%,    acc@5:    78.316%
 
