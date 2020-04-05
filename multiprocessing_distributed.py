@@ -21,12 +21,15 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+import sys
+sys.path.append(os.getcwd)
+from ghost_net import ghost_net
 
 model_names = sorted(name for name in models.__dict__
                      if name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-parser.add_argument('--data', metavar='DIR', default='/home/zhangzhi/Data/ImageNet2012', help='path to dataset')
+parser.add_argument('--data', metavar='DIR', default='/mnt/data2/raw', help='path to dataset')
 parser.add_argument('-a',
                     '--arch',
                     metavar='ARCH',
@@ -39,11 +42,11 @@ parser.add_argument('-j',
                     type=int,
                     metavar='N',
                     help='number of data loading workers (default: 4)')
-parser.add_argument('--epochs', default=90, type=int, metavar='N', help='number of total epochs to run')
+parser.add_argument('--epochs', default=30, type=int, metavar='N', help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N', help='manual epoch number (useful on restarts)')
 parser.add_argument('-b',
                     '--batch-size',
-                    default=256,
+                    default=1024,
                     type=int,
                     metavar='N',
                     help='mini-batch size (default: 256), this is the total '
@@ -51,7 +54,7 @@ parser.add_argument('-b',
                     'using Data Parallel or Distributed Data Parallel')
 parser.add_argument('--lr',
                     '--learning-rate',
-                    default=0.1,
+                    default=0.05,
                     type=float,
                     metavar='LR',
                     help='initial learning rate',
@@ -59,10 +62,10 @@ parser.add_argument('--lr',
 parser.add_argument('--momentum', default=0.9, type=float, metavar='M', help='momentum')
 parser.add_argument('--wd',
                     '--weight-decay',
-                    default=1e-4,
+                    default=4e-5,
                     type=float,
                     metavar='W',
-                    help='weight decay (default: 1e-4)',
+                    help='weight decay (default:4e-5)',
                     dest='weight_decay')
 parser.add_argument('-p', '--print-freq', default=10, type=int, metavar='N', help='print frequency (default: 10)')
 parser.add_argument('-e', '--evaluate', dest='evaluate', action='store_true', help='evaluate model on validation set')
@@ -93,13 +96,21 @@ def main_worker(gpu, ngpus_per_node, args):
 
     dist.init_process_group(backend='nccl', init_method='tcp://127.0.0.1:23456', world_size=4, rank=gpu)
     # create model
-    if args.pretrained:
-        print("=> using pre-trained model '{}'".format(args.arch))
-        model = models.__dict__[args.arch](pretrained=True)
-    else:
-        print("=> creating model '{}'".format(args.arch))
-        model = models.__dict__[args.arch]()
 
+#    if args.pretrained:
+#        print("=> using pre-trained model '{}'".format(args.arch))
+#        model = models.__dict__[args.arch](pretrained=True)
+#    else:
+#        print("=> creating model '{}'".format(args.arch))
+#        model = models.__dict__[args.arch]()
+    print('GhostNet loaded begin!')
+    model = ghost_net(width_mult=1.0)
+    checkpoint = torch.load('./checkpoint.pth.tar')
+    #checkpoint = torch.load('./model_best.pth.tar')
+    model.load_state_dict(checkpoint['state_dict'])  # 使用之前训练的结果进行fine-tune
+    #model.load_state_dict(torch.load('./ghostnet_1x-f97d70db.pth'))
+    print('GhostNet loaded over!')
+    print(model)
     torch.cuda.set_device(gpu)
     model.cuda(gpu)
     # When using a single GPU per process and per
@@ -320,7 +331,7 @@ class ProgressMeter(object):
 
 def adjust_learning_rate(optimizer, epoch, args):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
-    lr = args.lr * (0.1**(epoch // 30))
+    lr = args.lr * (1 - epoch / args.epochs)  # 学习率从0.05开始线性衰减，再训练30个epochs
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
