@@ -2481,7 +2481,7 @@ epoch28：acc@1:    73.092%,    acc@5:    90.992%
 
 epoch29：acc@1:    73.200%,    acc@5:    91.162%
 
-
+模型保存为model_best.pth.tar。
 
 
 
