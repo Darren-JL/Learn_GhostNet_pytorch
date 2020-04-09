@@ -171,7 +171,7 @@ Pointwise Convolution的运算与常规卷积运算非常相似，它的卷积�
 
 因为MobileNetV3的优越性，Ghost的基本结构也遵循了它的设计，用我们的Ghost Bottlenecks代替了MobileNetV3中的Bottlenecks。GhostNet主要由一堆以ghost模块为构件的Ghost Bottlenacks组成。（如下图所示）
 
-![GhostNet](/Users/momo/Documents/momo学习笔记/工作汇报/GhostNet.png)
+![GhostNet](/Users/momo/Documents/momo学习笔记/GhostNet.png)
 
 为了定制所需的网络需求，我们可以简单地乘以一个系数$\alpha$来统一控制通道的数量，从而改变网络的宽度。
 
@@ -323,7 +323,7 @@ GhostNet在COCO数据集上的表现最好。
 
 SE-Module 可以用于网络的任意阶段，且**squeeze 操作保证了在网络的早期感受野就可以大到全图的范围。**
 
-![SE module](/Users/momo/Documents/Learning-GhostNet-Pytorch/pictures/SE module.png)
+![SE module](/Users/momo/Documents/momo学习笔记/SE module.png)
 
 
 
@@ -331,7 +331,7 @@ SE-Module 可以用于网络的任意阶段，且**squeeze 操作保证了在网
 
 左图是SE-inception Module，第（2）步中的$squeeze$采用average pooling，得到$1*1*C$的向量；后面再接FC，但是为了减少参数，做了降维操作，增加了一个降维系数$r$，输出$1*1*\frac{C}{r}$；后接$ReLU$，再做一个升维操作，得到$1*1*C$，最终采用$Sigmoid$函数激活。激活之后，将每一个通道的权值向量$1*1*C$乘到相应的通道上，结构如下：
 
-![inception resnet SE module](/Users/momo/Documents/Learning-GhostNet-Pytorch/pictures/inception resnet SE module.png)
+![inception resnet SE module](/Users/momo/Documents/momo学习笔记/inception resnet SE module.png)
 
 可以看到参数量主要取决与FC，在实验时$r$一般取16，经验值！右图中，是resnet module，改造和inception分支很类似。
 
@@ -2558,3 +2558,42 @@ epoch42：acc@1:    50.578%,    acc@5:    75.700%
 ......
 
 epoch44：acc@1:    54.992%,    acc@5:    79.582%
+
+epoch45：acc@1:    56.034%,    acc@5:    80.428%
+
+......
+
+epoch49：acc@1:    53.222%,    acc@5:    77.800%
+
+......
+
+epoch52：acc@1:    57.156%,    acc@5:    80.944%
+
+epoch53：acc@1:    55.906%,    acc@5:    80.094%
+
+......
+
+epoch57：acc@1:    55.084%,    acc@5:    79.394%
+
+......
+
+epoch59：acc@1:    56.612%,    acc@5:    80.636%
+
+epoch60：acc@1:    55.792%,    acc@5:    80.098%
+
+......
+
+epoch64：acc@1:    53.050%,    acc@5:    77.578%
+
+epoch65：acc@1:    57.818%,    acc@5:    81.122%
+
+epoch66：acc@1:    56.568%,    acc@5:    80.616%
+
+......
+
+epoch68：acc@1:    57.672%,    acc@5:    81.342%
+
+......
+
+epoch72：acc@1:    58.532%,    acc@5:    82.016%
+
