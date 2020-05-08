@@ -2597,3 +2597,150 @@ epoch68：acc@1:    57.672%,    acc@5:    81.342%
 
 epoch72：acc@1:    58.532%,    acc@5:    82.016%
 
+
+
+
+
+**模型评测：**
+
+首先注意数据的预处理方式，代码如下：
+
+```
+# Data loading code
+    traindir = os.path.join(args.data, 'train')
+    valdir = os.path.join(args.data, 'val')
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+
+    train_dataset = datasets.ImageFolder(
+        traindir,
+        transforms.Compose([
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ]))
+
+    train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
+
+    train_loader = torch.utils.data.DataLoader(train_dataset,
+                                               batch_size=args.batch_size,
+                                               shuffle=(train_sampler is None),
+                                               num_workers=2,
+                                               pin_memory=True,
+                                               sampler=train_sampler)
+
+    val_loader = torch.utils.data.DataLoader(datasets.ImageFolder(
+        valdir,
+        transforms.Compose([
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            normalize,
+        ])),
+                                             batch_size=args.batch_size,
+                                             shuffle=False,
+                                             num_workers=2,
+                                             pin_memory=True)
+```
+
+数据加载预处理阶段可以分为两个阶段：
+
+（1）torchvision.datasets.ImageFolder函数，这个函数负责数据的预处理，参数包括数据的目录，以及预处理transforms.Compose；其中数据的目录部分要求数据集是分门别类地存储在各个类别文件夹中，这样才可以返回各个样本的标签；
+
+（2）torch.utils.data.DataLoader函数，这个函数是负责将（1）中处理好的数据按照batch_size进行打包；
+
+一般使用pytorch的时候，数据加载和预处理部分都需要这两阶段。但是步骤（1）一般都不用torchvision.datasets.ImageFolder函数，而是自己写脚本来预处理特定的数据，步骤（2）较简单，直接使用pytorch自带的DataLoader函数即可。
+
+下面给出评测该模型的脚本：
+
+```python
+import torch
+import torchvision
+from PIL import Image
+from torchvision import transforms
+from torch.utils.data import DataLoader
+from ghost_net import ghost_net
+import time
+
+device = torch.device('cuda')
+
+
+# 数据预处理
+data_transform = transforms.Compose([
+    transforms.Resize(224),  # 改变图像大小，作为224*224的正方形
+    transforms.CenterCrop(224),  # 以图像中心进行切割，参数只有一个要切成正方形>转
+    transforms.ToTensor(),  # 把一个取值范围是[0,255]的PIL.Image或者shape为(H,W,C)的numpy.ndarray，
+    # 转换成形状为[C,H,W]，取值范围是[0,1]的torch.FloadTensor
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225])  # 给定均值：(R,G,B) 方差：>（R，G，B），将会把Tensor正则化。
+    # 即：Normalized_image=(image-mean)/std。
+])
+
+
+
+# 加载模型
+print('load model begin!')
+model = ghost_net(width_mult=1.0)
+checkpoint = torch.load('./model_best.pth.tar')
+model.load_state_dict(checkpoint['state_dict'])
+model.eval()  # 固定batchnorm，dropout等，一定要有
+model= model.to(device)
+print('load model done!')
+
+
+
+# 测试单张图像
+img = Image.open('/home/sz/model_eval/panda.jpg')
+img = data_transform(img)
+#img = torch.Tensor(1,3,224,224) #如果只是测试时间，直接初始化一个Tensor即可
+print(type(img))
+print(img.shape)
+#img_f = torch.Tensor(1, 3, 224, 224)
+img = img.unsqueeze(0) # 这里直接输入img不可，因为尺寸不一致，img为[3,224,224]的Tensor，而模型需要[1,3,224,224]的Tensor
+print(type(img))
+print(img.shape)
+
+time_start = time.time()
+img_= img.to(device)
+outputs = model(img_)
+time_end = time.time()
+time_c = time_end - time_start
+_, predicted = torch.max(outputs,1)
+print('this picture maybe:' + str(predicted))
+print('time cost:', time_c, 's')
+
+'''
+# 批量测试验证集中的图像，使用dataloader，可以更改batch_size调节测试速度
+print('Test data load begin!')
+test_dataset = torchvision.datasets.ImageFolder(root='/home/momo/mnt/data2/datum/raw/val2', transform=data_transform)
+test_data = DataLoader(test_dataset, batch_size=1, shuffle=True, num_workers=4)
+print(type(test_data))
+print('Test data load done!')
+
+torch.no_grad()
+for img1, label1 in test_data:
+    img1 = img1.to(device)
+    label1 = label1.to(device)
+    out = model(img1)
+
+    _, pred = out.max(1)
+    print(pred)
+    print(label1)
+    num_correct = (pred == label1).sum().item()
+    acc = num_correct / img1.shape[0]
+    print('Test acc in current batch:' + str(acc))
+    eval_acc +=acc
+
+print('final acc in Test data:' + str(eval_acc / len(test_data)))
+'''
+```
+
+评测的时候，先定义好transform，然后直接读取的图片进行预处理即可输入模型运算：
+
+```python
+img = data_transform(img)
+```
+
+
+
+以上是一个图像分类模型的例子，包括各个步骤（数据下载，网络模型代码编写，训练，以及评测），关于视频分类的例子可以在repo（https://github.com/fourierer/Video_Classification_ResNet3D_Pytorch） 中查看。
