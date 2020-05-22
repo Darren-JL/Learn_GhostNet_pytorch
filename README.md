@@ -2745,3 +2745,5 @@ img = data_transform(img)
 
 以上是一个图像分类模型的例子，包括各个步骤（数据下载，网络模型代码编写，训练，以及评测）。文件夹evaluation中比较了当前工业界使用的一些轻量级网络的比较和评测。
 
+视频分类的各个步骤（包括测试一个视频的识别结果）可以参考 https://github.com/fourierer/Video_Classification_ResNet3D_Pytorch
+
