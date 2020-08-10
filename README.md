@@ -725,7 +725,7 @@ for epoch in range(nums_epoch):
 
 这里的代码正常运行，但并没有使用GPU加速，下面采用pytorch官方github上给出的多机多卡训练代码和另外的一个大神写的三个单机多卡训练的代码。
 
-pytorch官方给出的ImageNet上的训练代码包括多机多卡训练，情况非常复杂。（https://github.com/pytorch/examples/blob/master/imagenet/main.py）这里先介绍GitHub上另一个大神的代码，编写了三种情况下的单机多卡训练代码。（https://github.com/tczhangzhi/pytorch-distributed）
+pytorch官方给出的ImageNet上的训练代码包括多机多卡训练，情况非常复杂。 (https://github.com/pytorch/examples/blob/master/imagenet/main.py) 这里先介绍GitHub上另一个大神的代码，编写了三种情况下的单机多卡训练代码。 (https://github.com/tczhangzhi/pytorch-distributed) 
 
 1.使用nn.DataParallel
 
